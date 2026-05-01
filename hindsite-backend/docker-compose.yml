@@ -1,0 +1,28 @@
+# HindSite Backend – PostgreSQL + pgvector (data persists in volume)
+# Run: docker compose up -d   (start DB and keep data when you stop)
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: hindsite-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hindsite_user
+      POSTGRES_PASSWORD: hindsite123
+      POSTGRES_DB: hindsite_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data so it survives container stop/remove
+      - hindsite_pgdata:/var/lib/postgresql/data
+      # Run once on first start: enable pgvector + grant CREATE to app user
+      - ./docker/init-db.d:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hindsite_user -d hindsite_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hindsite_pgdata:
+    # Named volume: data lives here even when container is stopped/removed
